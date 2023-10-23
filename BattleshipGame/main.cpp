@@ -31,5 +31,7 @@ int main()
         std::cout << "Player won.\n";
     }
 
+    //ok
+
     return 0;
 }
