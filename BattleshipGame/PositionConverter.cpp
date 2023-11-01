@@ -57,13 +57,3 @@ int convertLetterToInt(char letter)
 		break;
 	}
 }
-
-std::array<int, 2> recievePositionValues(const std::string& position)
-{
-	int firstPos = convertLetterToInt(std::toupper(position[0]));
-	int secondPos = static_cast<int>(position[1] - 48);
-
-	std::array<int, 2> coordinates{ firstPos, secondPos };
-
-	return coordinates;
-}
