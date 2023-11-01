@@ -6,11 +6,7 @@
 
 #include "Player.h"
 
-struct Coordinates
-{
-	int m_yPosition;
-	int m_xPosition;
-};
+struct Coordinates;
 
 class Computer : public Player
 {
@@ -20,7 +16,6 @@ private:
 public:
 	Computer();
 
-	bool ableToPlace(const Coordinates& coords);
 	bool validateCoordinates(const Coordinates& coords);
 	void placeShipsFleet();
 	std::vector<Coordinates> createClosePositions(const Coordinates& baseCoords, Player* opponent);

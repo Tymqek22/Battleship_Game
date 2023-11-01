@@ -11,9 +11,24 @@
 
 Player::Player() : m_totalLives{ 17 }, m_playerBoard{ Board() }, m_hitBoard{Board()} {}
 
+bool Player::ableToPlace(const Coordinates& coords)
+{
+	if (m_hitBoard.getValue(coords.yPosition, coords.xPosition) == '*') {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
 void Player::showPlayersHitBoard()
 {
 	m_hitBoard.drawBoard();
+}
+
+void Player::showPlayersBoard()
+{
+	m_playerBoard.drawBoard();
 }
 
 void Player::decreaseLivesNo()
@@ -26,7 +41,7 @@ void Player::hit(Player* opponent)
 	constexpr int y = 0;
 	constexpr int x = 1;
 
-	std::array<int, 2> position;
+	Coordinates finalCoords = { 0,0 };
 	std::string rawPosition;
 
 	std::cout << "Enter the position to hit: ";
@@ -35,21 +50,25 @@ void Player::hit(Player* opponent)
 
 		if (positionValidator(rawPosition)) {
 
-			position = recievePositionValues(rawPosition);
+			finalCoords.yPosition = convertLetterToInt(std::toupper(rawPosition[y]));
+			finalCoords.xPosition = static_cast<int>(rawPosition[x] - 48);
 		}
 		else {
 			std::cout << "Wrong position entered!\n";
 		}
-	} while (!positionValidator(rawPosition));
 
-	if (opponent->getBoardValue(position[y], position[x]) != '*') {
-		std::cout << "Hit!\n";
-		m_hitBoard.uploadPosition(position[y], position[x], 'X');
+		if (!this->ableToPlace(finalCoords)) {
+			std::cout << "This position is occupied.\n";
+		}
+
+	} while (!positionValidator(rawPosition) || !this->ableToPlace(finalCoords));
+
+	if (opponent->getBoardValue(finalCoords.yPosition, finalCoords.xPosition) != '*') {
+		m_hitBoard.uploadPosition(finalCoords.yPosition, finalCoords.xPosition, 'X');
 		opponent->decreaseLivesNo();
 	}
 	else {
-		std::cout << "Miss!\n";
-		m_hitBoard.uploadPosition(position[y], position[x], 'O');
+		m_hitBoard.uploadPosition(finalCoords.yPosition, finalCoords.xPosition, 'O');
 	}
 }
 
@@ -96,4 +115,9 @@ void Player::placeShipsFleet()
 	m_playerBoard.placeShip(&destroyer);
 	system("cls");
 	m_playerBoard.drawBoard();
+}
+
+void Player::signHitShipsSegment(int yPos, int xPos)
+{
+	m_playerBoard.uploadPosition(yPos, xPos, '#');
 }

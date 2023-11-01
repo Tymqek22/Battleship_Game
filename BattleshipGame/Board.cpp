@@ -25,13 +25,13 @@ void Board::uploadPosition(int yPos, int xPos, char symbol)
 
 void Board::placeShip(Ship* ship)
 {
-	std::array<int, 2> position1 = ship->getFirstPos();
-	std::array<int, 2> position2 = ship->getSecondPos();
+	Coordinates position1 = ship->getFirstPos();
+	Coordinates position2 = ship->getSecondPos();
 	
 	//arrays to store x and y positions from both positions separately to find min and max x and y
 
-	std::array<int, 2> yPositions{ position1[0], position2[0] };
-	std::array<int, 2> xPositions{ position1[1], position2[1] };
+	std::array<int, 2> yPositions{ position1.yPosition, position2.yPosition };
+	std::array<int, 2> xPositions{ position1.xPosition, position2.xPosition };
 
 	constexpr int x = 1;
 	constexpr int y = 0;
@@ -43,7 +43,7 @@ void Board::placeShip(Ship* ship)
 
 		for (int i = *yMin; i <= *yMax; ++i) {
 
-			m_board[i][position1[x]] = ship->getSymbol();
+			m_board[i][position1.xPosition] = ship->getSymbol();
 		}
 	}
 	else if (ship->getOrientation() == 'H') {
@@ -53,7 +53,7 @@ void Board::placeShip(Ship* ship)
 
 		for (int i = *xMin; i <= *xMax; ++i) {
 
-			m_board[position1[y]][i] = ship->getSymbol();
+			m_board[position1.yPosition][i] = ship->getSymbol();
 		}
 	}
 }

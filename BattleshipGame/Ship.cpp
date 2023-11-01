@@ -9,15 +9,9 @@
 #include "Board.h"
 #include "PositionConverter.h"
 
-struct Coordinates
-{
-	int m_yPosition;
-	int m_xPosition;
-};
-
-Ship::Ship(const std::array<int, 2>& startPos, const std::array<int, 2>& endPos, int length,
+Ship::Ship(const Coordinates& startPos, const Coordinates& endPos, int length,
 	char orientation, char symbol, Board* boardOperator)
-	: m_startPos{ startPos }, m_endPos{ endPos }, m_length{ length }, m_orientation{ orientation },
+	: m_firstPos{ startPos }, m_secondPos{ endPos }, m_length{ length }, m_orientation{ orientation },
 	m_symbol{ symbol }, m_boardOperations{ boardOperator } {}
 
 void Ship::setOrientation()
@@ -35,7 +29,7 @@ void Ship::setOrientation()
 	m_orientation = orientation;
 }
 
-void Ship::setOnePosition(std::array<int, 2>& coordinates)
+void Ship::setOnePosition(Coordinates& coords)
 {
 	std::string position;
 
@@ -43,10 +37,12 @@ void Ship::setOnePosition(std::array<int, 2>& coordinates)
 		std::cin >> position;
 
 		if (!positionValidator(position)) {
-			std::cout << "Wrong position assigned.\n";
+			std::cout << "Invalid position entered.\n";
 		}
 		else {
-			coordinates = recievePositionValues(position);
+
+			coords.yPosition = convertLetterToInt(std::toupper(position[0]));
+			coords.xPosition = static_cast<int>(position[1] - 48);
 		}
 	} while (!positionValidator(position));
 }
@@ -57,25 +53,22 @@ void Ship::setBothPositions()
 	constexpr int y = 0;
 
 	do {
-		if (m_orientation == 'H') {
+		std::cout << "Enter first position: ";
+		this->setOnePosition(m_firstPos);
+		std::cout << "Enter second position: ";
+		do {
+			this->setOnePosition(m_secondPos);
 
-			std::cout << "Enter first position: ";
-			this->setOnePosition(m_startPos);
-			std::cout << "Enter second position: ";
-			do {
-				this->setOnePosition(m_endPos);
-			} while (!(this->checkLength(m_startPos[x], m_endPos[x])) || !(m_startPos[y] == m_endPos[y]));
-		}
-		else if (m_orientation == 'V') {
+			if (!this->checkLengthAndOrientation(m_firstPos, m_secondPos))
+				std::cout << "Wrong position assigned.\n";
 
-			std::cout << "Enter first position: ";
-			this->setOnePosition(m_startPos);
-			std::cout << "Enter second position: ";
-			do {
-				this->setOnePosition(m_endPos);
-			} while (!(this->checkLength(m_startPos[y], m_endPos[y])) || !(m_startPos[x] == m_endPos[x]));
-		}
-	} while (!(this->validatePosition(m_startPos, m_endPos)));
+		} while (!this->checkLengthAndOrientation(m_firstPos, m_secondPos));
+
+		if (!this->validatePosition(m_firstPos, m_secondPos))
+			std::cout << "You can't place a ship in this position.\n";
+
+	} while (!this->validatePosition(m_firstPos, m_secondPos));
+	
 }
 
 //computer methods
@@ -94,7 +87,7 @@ void Ship::setPositionsComp()
 	constexpr int y = 0;
 	constexpr int x = 1;
 
-	std::array<std::string, 10> letters{ "A","B","C","D","E","F","G","H","I","J" };
+	std::array<char, 10> letters{ 'A','B','C','D','E','F','G','H','I','J' };
 	std::array<int, 10> numbers{ 0,1,2,3,4,5,6,7,8,9 };
 
 	std::mt19937 mt{ std::random_device{}() };
@@ -103,71 +96,77 @@ void Ship::setPositionsComp()
 	do {
 		if (m_orientation == 'H') {
 			//setting first position
-			std::string position1 = letters[range(mt)] + std::to_string(numbers[range(mt)]);
-			std::array<int, 2> firstPos = recievePositionValues(position1);
-			m_startPos = firstPos;
+			m_firstPos.yPosition = convertLetterToInt(letters[range(mt)]);
+			m_firstPos.xPosition = numbers[range(mt)];
 
 			//setting second position
-			int secondX = firstPos[x];
-			secondX += m_length - 1;
+			m_secondPos.yPosition = m_firstPos.yPosition;
+			int secondXPos = m_firstPos.xPosition;
+			secondXPos += m_length - 1;
 
-			if (secondX > 9) {
+			if (secondXPos > 9) {
 
-				secondX = firstPos[x];
-				secondX -= m_length - 1;
+				secondXPos = m_firstPos.xPosition;
+				secondXPos -= m_length - 1;
 			}
 
-			std::stringstream ss;
-			ss << position1[y] << secondX;
-
-			std::array<int, 2> secondPos = recievePositionValues(ss.str());
-			m_endPos = secondPos;
+			m_secondPos.xPosition = secondXPos;
 		}
 		else if (m_orientation == 'V') {
 			//first
-			std::string position1 = letters[range(mt)] + std::to_string(numbers[range(mt)]);
-			std::array<int, 2> firstPos = recievePositionValues(position1);
-			m_startPos = firstPos;
+			m_firstPos.yPosition = convertLetterToInt(letters[range(mt)]);
+			m_firstPos.xPosition = numbers[range(mt)];
 
 			//second
-			int secondY = firstPos[y];
-			secondY += m_length - 1;
+			m_secondPos.xPosition = m_firstPos.xPosition;
+			int secondYPos = m_firstPos.yPosition;
+			secondYPos += m_length - 1;
 
-			if (secondY > 9) {
-				secondY = firstPos[y];
-				secondY -= m_length - 1;
+			if (secondYPos > 9) {
+				secondYPos = m_firstPos.yPosition;
+				secondYPos -= m_length - 1;
 			}
 
-			std::stringstream ss;
-			ss << letters[secondY] << position1[x];
-			//std::string position2 = std::to_string(secondY) + std::to_string(position1[x]);
-			std::array<int, 2> secondPos = recievePositionValues(ss.str());
-			m_endPos = secondPos;
+			m_secondPos.yPosition = secondYPos;
 		}
-	} while (!this->validatePosition(m_startPos, m_endPos));
+	} while (!this->validatePosition(m_firstPos, m_secondPos));
 }
 
-bool Ship::checkLength(int firstPos, int secondPos)
+bool Ship::checkLengthAndOrientation(const Coordinates& coords1, const Coordinates& coords2)
 {
-	std::array<int, 2> values{ firstPos, secondPos };
+	if (m_orientation == 'H') {
 
-	auto max = std::max_element(values.begin(), values.end());
-	auto min = std::min_element(values.begin(), values.end());
+		std::array<int, 2> values{ coords1.xPosition, coords2.xPosition };
 
-	if (*max - *min == m_length - 1) {
-		return true;
+		auto max = std::max_element(values.begin(), values.end());
+		auto min = std::min_element(values.begin(), values.end());
+
+		//checking proper length and equality of the orientation indexes
+		if ((*max - *min == m_length - 1) && (coords1.yPosition == coords2.yPosition)) {
+			return true;
+		}
 	}
-	else {
-		return false;
+	else if (m_orientation == 'V') {
+
+		std::array<int, 2> values{ coords1.yPosition, coords2.yPosition };
+
+		auto max = std::max_element(values.begin(), values.end());
+		auto min = std::min_element(values.begin(), values.end());
+
+		if ((*max - *min == m_length - 1) && (coords1.xPosition == coords2.xPosition)) {
+			return true;
+		}
 	}
+
+	return false;
 }
 
-bool Ship::validatePosition(const std::array<int, 2>& firstPos, const std::array<int, 2>& secondPos)
+bool Ship::validatePosition(const Coordinates& coords1, const Coordinates& coords2)
 {
 	constexpr int x = 1;
 	constexpr int y = 0;
-	std::array<int, 2> yPositions{ firstPos[0], secondPos[0] };
-	std::array<int, 2> xPositions{ firstPos[1], secondPos[1] };
+	std::array<int, 2> yPositions{ coords1.yPosition, coords2.yPosition };
+	std::array<int, 2> xPositions{ coords1.xPosition, coords2.xPosition };
 
 
 	if (m_orientation == 'V') {
@@ -187,7 +186,7 @@ bool Ship::validatePosition(const std::array<int, 2>& firstPos, const std::array
 				continue;
 			}
 			else {
-				for (int j = firstPos[x] - 1; j <= firstPos[x] + 1; ++j) {
+				for (int j = coords1.xPosition - 1; j <= coords1.xPosition + 1; ++j) {
 
 					if (j < 0 || j > 9) {
 						continue;
@@ -207,7 +206,7 @@ bool Ship::validatePosition(const std::array<int, 2>& firstPos, const std::array
 		auto xMin = std::min_element(xPositions.begin(), xPositions.end());
 		auto xMax = std::max_element(xPositions.begin(), xPositions.end());
 
-		for (int i = firstPos[y] - 1; i <= firstPos[y] + 1; ++i) {
+		for (int i = coords1.yPosition - 1; i <= coords1.yPosition + 1; ++i) {
 
 			if (i < 0 || i > 9) {
 				continue;
